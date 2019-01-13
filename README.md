@@ -56,3 +56,52 @@ camera:
   still_image_url: >
     {{ 'https://HASS_URL.duckdns.org:8123'+states.camera.sighthound.attributes.entity_picture }}
 ```
+
+
+# Scripts
+The following scripts are included:
+* export_gps.py
+* plot.py
+
+## export_gps.py
+This script can be used to export latitude, longitude, timestamp and name into a csv file. It can be used to frequently save location data and then plot it onto a map using the plot.py script.
+The script can be called the following way:
+
+`python export_gps.py -t 37.766956 -o -122.438481 -d '2018-12-07T19:32:43.589+0200' -p PERSON_NAME`
+
+This will create a new file or edit an existing file called DATE+PERSON_NAME+_gps.csv
+
+### Use with Home Assistant
+This export script can be used with Home Assistant. Since it includes some additional python packages, we can't just use a python_script and instead have to use a shell_command:
+
+`shell_command:   export_gps: "python /path/to/export_gps.py -t {{states.device_tracker.DEVICE_NAME.attributes.latitude}} -o {{states.device_tracker.DEVICE_NAME.attributes.longitude}} -d '{{states.device_tracker.DEVICE_NAME.attributes.timestamp}}' -p PERSON_NAME" `
+
+Note that the device tracker needs to include latitude and longitude attributes. You can now create an automation that calls this script whenever the device_tracker changes, or create a new flow in Node-Red.
+
+## plot.py
+The plog script can be used to plot location data in a .csv file onto google maps using [gmplot](https://github.com/vgm64/gmplot). This will generate a HTML file that can be displayed in a browser.
+
+The script can be called this way:
+`python plot.py -p PERSON_NAME`
+
+## Use with Home Assistant
+Similar to the export script, this script can be called using a shell_command. But first you'll need to install the gmplot package using `pip install gmplot`. If you're running in Docker you'll have to run this command inside the docker container.
+
+The shell_command could look something like this:
+`plot_person: "python /path/to/plot.py -p person"`
+
+To display the generated html file, you can use an iframe panel:
+```
+panel_iframe:   
+  gps:     
+    title: 'GPS'     
+    url: '/local/person_gps.html'
+```
+
+or an iframe lovelace card:
+```
+- id: person_gps_iframe         
+  type: iframe         
+  url: /local/person_gps.html
+```
+
